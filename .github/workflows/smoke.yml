@@ -1,0 +1,74 @@
+name: Smoke
+
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Specific version to install (defaults to latest)
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    name: Install + import (${{ matrix.os }} / Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Wait for npm registry to index
+        if: github.event_name == 'workflow_run'
+        run: sleep 30
+        shell: bash
+
+      - name: Install
+        shell: bash
+        run: |
+          mkdir smoke && cd smoke
+          npm init -y >/dev/null
+          if [ -n "${{ inputs.version }}" ]; then
+            npm install "@cryptflare/mcp-client@${{ inputs.version }}"
+          else
+            npm install "@cryptflare/mcp-client@latest"
+          fi
+
+      - name: Verify import + exports
+        shell: bash
+        working-directory: smoke
+        run: |
+          cat > verify.mjs <<'EOF'
+          import * as mcp from '@cryptflare/mcp-client';
+
+          if (typeof mcp.createMcpClient !== 'function') {
+            throw new Error('createMcpClient export missing');
+          }
+
+          const client = mcp.createMcpClient({
+            token: 'sm_smoke_test_token',
+            baseUrl: 'http://127.0.0.1:1',
+          });
+
+          if (!client || typeof client !== 'object') {
+            throw new Error('client factory returned non-object');
+          }
+
+          const toolNames = Object.keys(client).filter((k) => typeof client[k] === 'function');
+          if (toolNames.length === 0) {
+            throw new Error('no tool methods exposed on client');
+          }
+
+          console.log('smoke OK -', toolNames.length, 'tools exposed');
+          EOF
+          node verify.mjs
