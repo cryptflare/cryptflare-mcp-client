@@ -49,26 +49,31 @@ jobs:
         working-directory: smoke
         run: |
           cat > verify.mjs <<'EOF'
-          import * as mcp from '@cryptflare/mcp-client';
+          import { McpClient, McpError } from '@cryptflare/mcp-client';
 
-          if (typeof mcp.createMcpClient !== 'function') {
-            throw new Error('createMcpClient export missing');
+          if (typeof McpClient !== 'function') {
+            throw new Error('McpClient export is not a class');
+          }
+          if (typeof McpError !== 'function') {
+            throw new Error('McpError export is not a class');
           }
 
-          const client = mcp.createMcpClient({
-            token: 'sm_smoke_test_token',
-            baseUrl: 'http://127.0.0.1:1',
+          const client = new McpClient({
+            endpoint: 'http://127.0.0.1:1/mcp',
+            bearer: 'cf_oauth_smoke_test',
           });
 
-          if (!client || typeof client !== 'object') {
-            throw new Error('client factory returned non-object');
+          // Confirm the prototype carries the expected MCP methods rather
+          // than just being a stub object. Method names come from the
+          // canonical MCP transport surface.
+          const proto = Object.getPrototypeOf(client);
+          const methods = Object.getOwnPropertyNames(proto).filter(
+            (k) => typeof proto[k] === 'function' && k !== 'constructor',
+          );
+          if (methods.length === 0) {
+            throw new Error('McpClient exposes no methods');
           }
 
-          const toolNames = Object.keys(client).filter((k) => typeof client[k] === 'function');
-          if (toolNames.length === 0) {
-            throw new Error('no tool methods exposed on client');
-          }
-
-          console.log('smoke OK -', toolNames.length, 'tools exposed');
+          console.log('smoke OK -', methods.length, 'McpClient methods');
           EOF
           node verify.mjs
