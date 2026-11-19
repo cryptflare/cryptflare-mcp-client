@@ -12,13 +12,13 @@ export class McpError extends Error {
     public readonly status: number,
     public readonly requestId?: string,
   ) {
-    super(message);
-    this.name = 'McpError';
+    super(message)
+    this.name = 'McpError'
   }
 
   /** True for codes that represent a transient upstream issue. */
   get isRetriable(): boolean {
-    if (this.code === 'RATE_LIMITED' || this.code === 'MCP_TOOL_QUOTA_EXCEEDED') return false;
-    return this.status >= 500;
+    if (this.code === 'RATE_LIMITED' || this.code === 'MCP_TOOL_QUOTA_EXCEEDED') return false
+    return this.status >= 500
   }
 }

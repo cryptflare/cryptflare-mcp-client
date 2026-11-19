@@ -1,6 +1,6 @@
 {
   "name": "@cryptflare/mcp-client",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "TypeScript client for the CryptFlare MCP server. Lets agents (Claude, Cursor, Zed) call the typed MCP tool facade over the CryptFlare REST API.",
   "license": "Apache-2.0",
   "author": {
@@ -46,6 +46,7 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
     "test": "vitest run"
   },
   "files": [
@@ -57,10 +58,10 @@
     "access": "public"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.1.5",
-    "tsup": "^8.5.1",
+    "@vitest/coverage-v8": "^4.1.12",
+    "tsup": "^9.0.0",
     "typescript": "^6.0.2",
-    "vitest": "^4.1.3"
+    "vitest": "^4.1.12"
   },
   "module": "./dist/index.js"
 }
